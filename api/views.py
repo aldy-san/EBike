@@ -3,6 +3,8 @@ from .models import *
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .serializers import *
+import datetime
+import jwt
 
 # Create your views here.
 
@@ -11,16 +13,6 @@ class UsersView(APIView):
         users = Users.objects.all()
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
-    def post(self, request):
-        # request
-        user = request.data
-        # print(request)
-        # Create an user from the above data
-        serializer = UserSerializer(data=user, context = {'request':request})
-        if serializer.is_valid():
-            user_saved = serializer.save()
-            return Response({"success": "User '{}' created successfully".format(user_saved.username)})
-        return Response({"error" : "yep its eraror"})
 
 class UsersDetailView(APIView):
     def get(self, request, pk):
@@ -110,6 +102,18 @@ class CycleDetailView(APIView):
         cycle = Cycle.objects.get(cycle_id=pk)
         cycle.delete()
         return Response('Station telah dihapus')
+
+class Register(APIView):
+    def post(self, request):
+        # request
+        user = request.data
+        # print(request)
+        # Create an user from the above data
+        serializer = UserSerializer(data=user, context = {'request':request})
+        if serializer.is_valid():
+            user_saved = serializer.save()
+            return Response({"success": "User '{}' created successfully".format(user_saved.username)})
+        return Response({"error" : "yep its error"})
 
 class Login(APIView):
     def post(self, request):
