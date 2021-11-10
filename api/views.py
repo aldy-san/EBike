@@ -20,4 +20,4 @@ class UsersView(APIView):
         if serializer.is_valid():
             user_saved = serializer.save()
             return Response({"success": "User '{}' created successfully".format(user_saved.username)})
-        return Response({"error" : "yep its error"})
+        return Response({"error" : "yep its eraror"})
