@@ -9,3 +9,22 @@ class Users(models.Model):
     date_created = models.DateField(auto_now_add=True)
     def __str__(self):
         return self.username
+
+class Station(models.Model):
+    station_id = models.BigAutoField(primary_key=True)
+    station_name = models.CharField(max_length=256)
+
+    def __repr__(self):
+        return str(self.station_id)
+
+class Cycle(models.Model):
+    cycle_id = models.BigAutoField(primary_key=True)
+    cycle_name = models.CharField(max_length=255, default='')
+    station_id = models.ForeignKey(Station, on_delete=models.CASCADE)
+    status = models.IntegerField(default=0)
+    deskripsi = models.TextField(default='')
+    harga = models.IntegerField(default=0)
+
+
+    def __repr__(self):
+        return str(self.cycle_id)
