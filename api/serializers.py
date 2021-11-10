@@ -12,6 +12,27 @@ class UserSerializer(serializers.ModelSerializer):
             'password',
             'date_created',
         ]
+
+class StationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Station
+        fields = [
+            'station_id',
+            'station_name',
+        ]
+
+class CycleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Cycle
+        fields = [
+            'cycle_id',
+            'cycle_name',
+            'station_id',
+            'status',
+            'deskripsi',
+            'harga',
+        ]
+
 # class UserSerializer(serializers.Serializer):
 #     # user_id = serializers.BigAutoField(primary_key=True)
 #     username = serializers.CharField(max_length=256)
