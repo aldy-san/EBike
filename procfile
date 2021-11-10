@@ -1,1 +1,1 @@
-web: gunicorn EBike.wsgi
+web: gunicorn ebike.wsgi
