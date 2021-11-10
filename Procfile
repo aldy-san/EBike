@@ -1,1 +1,1 @@
-web: gunicorn ebike.wsgi --log-file -
+web: gunicorn EBike.wsgi --log-file -
