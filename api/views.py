@@ -1,8 +1,12 @@
+from django.db.models import manager
 from django.shortcuts import render
 from django.contrib.auth.hashers import make_password, check_password
+from rest_framework import response
 from .models import *
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.exceptions import AuthenticationFailed
 from .serializers import *
 import datetime
 import jwt
@@ -63,18 +67,50 @@ class UserLogin(APIView):
             if not check_password(data['password'], user['password']):
                 return Response('Password Salah')
             
+            # exp = expired, iat = issued at
             payload = {
                 'id': user['user_id'],
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=60),
                 'iat': datetime.datetime.utcnow()
             }
 
+            # token = RefreshToken.for_user(user)
             token = jwt.encode(payload, 'secret', algorithm='HS256')
 
-            return Response({
-                'message': "Login Successfully",
+            response = Response()
+            response.set_cookie(key='jwt', value=token, httponly=True)
+            response.data = {
                 'jwt': token
-            })
+            }
+            return response
+
+# User authentication
+class UserAuthentication(APIView):
+    def get(self, request):
+        token = request.COOKIES.get('jwt')
+
+        if not token:
+            raise AuthenticationFailed("Unauthenticated")
+
+        try:
+            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Unauthenticated")
+
+        user = Users.objects.filter(user_id=payload['id']).first()
+        serializer = UserSerializer(user)
+
+        return Response(serializer.data)
+
+# Logout
+class UserLogout(APIView):
+    def post(self, request):
+        response = Response()
+        response.delete_cookie('jwt')
+        response.data = {
+            "Message": "User has logout successfully"
+        }
+        return response
 
 # Get all station
 class StationView(APIView):

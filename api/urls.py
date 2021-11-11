@@ -12,6 +12,8 @@ urlpatterns = [
     path('user/detail/<int:user_id>', UserDetailView.as_view()),
     path('user/register/', UserRegister.as_view()),
     path('user/login/', UserLogin.as_view()),
+    path('user/authenticate/', UserAuthentication.as_view()),
+    path('user/logout/', UserLogout.as_view()),
     path('stations/', StationView.as_view()),
     path('station/register/', StationRegister.as_view()),
     path('station/detail/<int:station_id>', StationDetailView.as_view()),
