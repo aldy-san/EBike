@@ -3,6 +3,7 @@ from django.shortcuts import render
 from django.contrib.auth.hashers import make_password, check_password
 from rest_framework import response
 from .models import *
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -23,12 +24,14 @@ class UsersView(APIView):
 # Get user by user_id
 class UserDetailView(APIView):
     def get(self, request, user_id):
+        permission_classes = [IsAuthenticated | IsAdminUser]
         user = Users.objects.get(user_id=user_id)
         serializer = UserSerializer(user, many=False)
         return Response(serializer.data)
 
     def put(self, request, user_id):
         data = request.data
+        permission_classes = [IsAuthenticated | IsAdminUser]
         user = Users.objects.get(user_id=user_id)
         serializer = UserSerializer(user, data=request.data)
         if serializer.is_valid():
@@ -36,6 +39,7 @@ class UserDetailView(APIView):
         return Response(serializer.data)
 
     def delete(self, request, user_id):
+        permission_classes = [IsAuthenticated | IsAdminUser]
         user = Users.objects.get(user_id=user_id)
         user.delete()
         return Response('user telah dihapus')
@@ -43,10 +47,8 @@ class UserDetailView(APIView):
 # Registration
 class UserRegister(APIView):
     def post(self, request):
-        # request
+        permission_classes = [IsAuthenticated | IsAdminUser]
         user = request.data
-        # print(request)
-        # Create an user from the above data
         serializer = UserSerializer(data=user, context = {'request':request})
         if serializer.is_valid():
             user_saved = serializer.save(password=make_password(user['password']))
@@ -56,6 +58,7 @@ class UserRegister(APIView):
 # Login
 class UserLogin(APIView):
     def post(self, request):
+        permission_classes = [IsAuthenticated | IsAdminUser]
         if request.method == 'POST':
             data = request.data
             user = Users.objects.filter(username=data['username']).values().first()
@@ -87,6 +90,7 @@ class UserLogin(APIView):
 # User authentication
 class UserAuthentication(APIView):
     def get(self, request):
+        permission_classes = [IsAuthenticated | IsAdminUser]
         token = request.COOKIES.get('jwt')
 
         if not token:
@@ -120,6 +124,7 @@ class StationView(APIView):
         return Response(serializer.data)
 
 class StationRegister(APIView):
+    permission_classes = [IsAdminUser]
     def post(self, request):
         # request
         station = request.data
@@ -133,12 +138,14 @@ class StationRegister(APIView):
 
 # Get station by station id
 class StationDetailView(APIView):
+    permission_classes = [IsAuthenticated | IsAdminUser]
     def get(self, request, station_id):
         station = Station.objects.get(station_id=station_id)
         serializer = StationSerializer(station, many=False)
         return Response(serializer.data)
 
     def put(self, request, station_id):
+        permission_classes = [IsAdminUser]
         data = request.data
         station = Station.objects.get(station_id=station_id)
         serializer = StationSerializer(station, data=request.data)
@@ -148,6 +155,7 @@ class StationDetailView(APIView):
         return Response({"error" : "yep its error"})
         
     def delete(self, request, station_id):
+        permission_classes = [IsAdminUser]
         station = Station.objects.get(station_id=station_id)
         station.delete()
         return Response('Station telah dihapus')
@@ -155,16 +163,15 @@ class StationDetailView(APIView):
 # Get all cycle
 class CycleView(APIView):
     def get(self,request):
+        permission_classes = [IsAuthenticated | IsAdminUser]
         cycle = Cycle.objects.all()
         serializer = CycleSerializer(cycle, many=True)
         return Response(serializer.data)
 
 class CycleRegistration(APIView):
     def post(self, request):
-        # request
+        permission_classes = [IsAdminUser]
         cycle = request.data
-        # print(request)
-        # Create an user from the above data
         serializer = CycleSerializer(data=cycle, context = {'request':request})
         if serializer.is_valid():
             cycle_saved = serializer.save()
@@ -174,11 +181,13 @@ class CycleRegistration(APIView):
 # Get cycle by cycle_id
 class CycleDetailView(APIView):
     def get(self, request, cycle_id):
+        permission_classes = [IsAuthenticated | IsAdminUser]
         cycle = Cycle.objects.get(cycle_id=cycle_id)
         serializer = CycleSerializer(cycle, many=False)
         return Response(serializer.data)
 
     def put(self, request, cycle_id):
+        permission_classes = [IsAdminUser]
         data = request.data
         cycle = Cycle.objects.get(cycle_id=cycle_id)
         serializer = CycleSerializer(cycle, data=request.data)
@@ -187,6 +196,7 @@ class CycleDetailView(APIView):
         return Response(serializer.data)
 
     def delete(self, request, cycle_id):
+        permission_classes = [IsAdminUser]
         cycle = Cycle.objects.get(cycle_id=cycle_id)
         cycle.delete()
         return Response('Cycle telah dihapus')

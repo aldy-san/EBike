@@ -8,13 +8,13 @@ class Users(models.Model):
     password = models.CharField(max_length=16)
     date_created = models.DateField(auto_now_add=True)
     def __str__(self):
-        return self.username
+        return str(self.username)
 
 class Station(models.Model):
     station_id = models.BigAutoField(primary_key=True)
     station_name = models.CharField(max_length=256)
 
-    def __repr__(self):
+    def __str__(self):
         return str(self.station_id)
 
 class Cycle(models.Model):
@@ -25,6 +25,5 @@ class Cycle(models.Model):
     deskripsi = models.TextField(default='')
     harga = models.IntegerField(default=0)
 
-
-    def __repr__(self):
+    def __str__(self):
         return str(self.cycle_id)
