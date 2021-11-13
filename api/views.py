@@ -1,7 +1,8 @@
 from django.db.models import manager
+from django.http.response import HttpResponseNotFound
 from django.shortcuts import render
+from django.http import HttpResponse
 from django.contrib.auth.hashers import make_password, check_password
-from rest_framework import response
 from .models import *
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
@@ -19,92 +20,106 @@ class UsersView(APIView):
     def get(self,request):
         users = Users.objects.all()
         serializer = UserSerializer(users, many=True)
-        return Response(serializer.data)
+        return Response({
+            "status": HttpResponse.status_code,
+            "data": serializer.data})
 
 # Get user by user_id
 class UserDetailView(APIView):
     def get(self, request, user_id):
-        permission_classes = [IsAuthenticated | IsAdminUser]
+        # permission_classes = [IsAuthenticated | IsAdminUser]
         user = Users.objects.get(user_id=user_id)
         serializer = UserSerializer(user, many=False)
-        return Response(serializer.data)
+        return Response({
+            "status": HttpResponse.status_code,
+            "data": serializer.data})
 
     def put(self, request, user_id):
         data = request.data
-        permission_classes = [IsAuthenticated | IsAdminUser]
+        # permission_classes = [IsAuthenticated | IsAdminUser]
         user = Users.objects.get(user_id=user_id)
-        serializer = UserSerializer(user, data=request.data)
+        serializer = UserSerializer(user, data=data)
         if serializer.is_valid():
             serializer.save()
-        return Response(serializer.data)
+        return Response({
+            "status": HttpResponse.status_code,
+            "data": serializer.data})
 
     def delete(self, request, user_id):
-        permission_classes = [IsAuthenticated | IsAdminUser]
+        # permission_classes = [IsAuthenticated | IsAdminUser]
         user = Users.objects.get(user_id=user_id)
         user.delete()
-        return Response('user telah dihapus')
+        return Response({
+            "status": HttpResponse.status_code,
+            "message": 'User {} telah dihapus'.format(user['user_id'])})
 
 # Registration
 class UserRegister(APIView):
     def post(self, request):
-        permission_classes = [IsAuthenticated | IsAdminUser]
+        # permission_classes = [IsAuthenticated | IsAdminUser]
         user = request.data
         serializer = UserSerializer(data=user, context = {'request':request})
         if serializer.is_valid():
             user_saved = serializer.save(password=make_password(user['password']))
-            return Response({"success": "User '{}' created successfully".format(user_saved.username)})
-        return Response({"error" : "yep its error"})
+            return Response(
+                {"status" : HttpResponse.status_code,
+                "data" : user_saved})
+        return Response({
+           "status" : HttpResponse.status_code,
+            "error" : "Terjadi kesalahan"})
 
 # Login
 class UserLogin(APIView):
     def post(self, request):
-        permission_classes = [IsAuthenticated | IsAdminUser]
-        if request.method == 'POST':
-            data = request.data
-            user = Users.objects.filter(username=data['username']).values().first()
-            if not user:
-                return Response("User tidak ditemukan")
+        # permission_classes = [IsAuthenticated | IsAdminUser]
+        data = request.data
+        user = Users.objects.filter(username=data['username']).values().first()
+        if not user:
+            return Response("User tidak ditemukan")
 
-            # kode di bawah me-return false jika password yang diinput tidak sesuai dengan
-            # password yang sudah di-hash
-            if not check_password(data['password'], user['password']):
-                return Response('Password Salah')
+        # kode di bawah me-return false jika password yang diinput tidak sesuai dengan
+        # password yang sudah di-hash
+        if not check_password(data['password'], user['password']):
+            return Response('Password Salah')
             
             # exp = expired, iat = issued at
-            payload = {
-                'id': user['user_id'],
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=60),
-                'iat': datetime.datetime.utcnow()
-            }
+        payload = {
+            'id': user['user_id'],
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=60),
+            'iat': datetime.datetime.utcnow()
+        }
 
-            # token = RefreshToken.for_user(user)
-            token = jwt.encode(payload, 'secret', algorithm='HS256')
+        # token = RefreshToken.for_user(user)
+        token = jwt.encode(payload, 'secret', algorithm='HS256')
 
-            response = Response()
-            response.set_cookie(key='jwt', value=token, httponly=True)
-            response.data = {
-                'jwt': token
-            }
-            return response
+        response = Response()
+        response.set_cookie(key='jwt', value=token, httponly=True)
+        response.data = {
+            "status": HttpResponse.status_code,
+            'jwt': token
+        }
+        return response
 
 # User authentication
 class UserAuthentication(APIView):
     def get(self, request):
-        permission_classes = [IsAuthenticated | IsAdminUser]
+        # permission_classes = [IsAuthenticated | IsAdminUser]
         token = request.COOKIES.get('jwt')
 
         if not token:
-            raise AuthenticationFailed("Unauthenticated")
+            raise AuthenticationFailed("Unauthenticated", status=401)
 
         try:
             payload = jwt.decode(token, 'secret', algorithms=['HS256'])
         except jwt.ExpiredSignatureError:
-            raise AuthenticationFailed("Unauthenticated")
+            raise AuthenticationFailed("Unauthenticated", status=401)
 
         user = Users.objects.filter(user_id=payload['id']).first()
         serializer = UserSerializer(user)
 
-        return Response(serializer.data)
+        return Response({
+            "status": HttpResponse.status_code,
+            "data": serializer.data})
 
 # Logout
 class UserLogout(APIView):
@@ -112,6 +127,7 @@ class UserLogout(APIView):
         response = Response()
         response.delete_cookie('jwt')
         response.data = {
+            "status" : HttpResponse.status_code,
             "Message": "User has logout successfully"
         }
         return response
@@ -124,7 +140,7 @@ class StationView(APIView):
         return Response(serializer.data)
 
 class StationRegister(APIView):
-    permission_classes = [IsAdminUser]
+    # permission_classes = [IsAdminUser]
     def post(self, request):
         # request
         station = request.data
@@ -138,14 +154,14 @@ class StationRegister(APIView):
 
 # Get station by station id
 class StationDetailView(APIView):
-    permission_classes = [IsAuthenticated | IsAdminUser]
+    # permission_classes = [IsAuthenticated | IsAdminUser]
     def get(self, request, station_id):
         station = Station.objects.get(station_id=station_id)
         serializer = StationSerializer(station, many=False)
         return Response(serializer.data)
 
     def put(self, request, station_id):
-        permission_classes = [IsAdminUser]
+        # permission_classes = [IsAdminUser]
         data = request.data
         station = Station.objects.get(station_id=station_id)
         serializer = StationSerializer(station, data=request.data)
@@ -155,7 +171,7 @@ class StationDetailView(APIView):
         return Response({"error" : "yep its error"})
         
     def delete(self, request, station_id):
-        permission_classes = [IsAdminUser]
+        # permission_classes = [IsAdminUser]
         station = Station.objects.get(station_id=station_id)
         station.delete()
         return Response('Station telah dihapus')
@@ -163,14 +179,14 @@ class StationDetailView(APIView):
 # Get all cycle
 class CycleView(APIView):
     def get(self,request):
-        permission_classes = [IsAuthenticated | IsAdminUser]
+        # permission_classes = [IsAuthenticated | IsAdminUser]
         cycle = Cycle.objects.all()
         serializer = CycleSerializer(cycle, many=True)
         return Response(serializer.data)
 
 class CycleRegistration(APIView):
     def post(self, request):
-        permission_classes = [IsAdminUser]
+        # permission_classes = [IsAdminUser]
         cycle = request.data
         serializer = CycleSerializer(data=cycle, context = {'request':request})
         if serializer.is_valid():
@@ -181,13 +197,13 @@ class CycleRegistration(APIView):
 # Get cycle by cycle_id
 class CycleDetailView(APIView):
     def get(self, request, cycle_id):
-        permission_classes = [IsAuthenticated | IsAdminUser]
+        # permission_classes = [IsAuthenticated | IsAdminUser]
         cycle = Cycle.objects.get(cycle_id=cycle_id)
         serializer = CycleSerializer(cycle, many=False)
         return Response(serializer.data)
 
     def put(self, request, cycle_id):
-        permission_classes = [IsAdminUser]
+        # permission_classes = [IsAdminUser]
         data = request.data
         cycle = Cycle.objects.get(cycle_id=cycle_id)
         serializer = CycleSerializer(cycle, data=request.data)
@@ -196,7 +212,7 @@ class CycleDetailView(APIView):
         return Response(serializer.data)
 
     def delete(self, request, cycle_id):
-        permission_classes = [IsAdminUser]
+        # permission_classes = [IsAdminUser]
         cycle = Cycle.objects.get(cycle_id=cycle_id)
         cycle.delete()
         return Response('Cycle telah dihapus')
