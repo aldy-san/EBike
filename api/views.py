@@ -1,5 +1,5 @@
 from django.db.models import manager
-from django.http.response import HttpResponseNotFound
+from django.http.response import JsonResponse
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.contrib.auth.hashers import make_password, check_password
@@ -21,8 +21,8 @@ class UsersView(APIView):
         users = Users.objects.all()
         serializer = UserSerializer(users, many=True)
         return Response({
-            "status": HttpResponse.status_code,
-            "data": serializer.data})
+            "data": serializer.data}, 
+            status=200)
 
 # Get user by user_id
 class UserDetailView(APIView):
@@ -31,8 +31,9 @@ class UserDetailView(APIView):
         user = Users.objects.get(user_id=user_id)
         serializer = UserSerializer(user, many=False)
         return Response({
-            "status": HttpResponse.status_code,
-            "data": serializer.data})
+            "data": serializer.data},
+            status=200)
+        # return 404 kalau user tidak ada
 
     def put(self, request, user_id):
         data = request.data
@@ -42,16 +43,18 @@ class UserDetailView(APIView):
         if serializer.is_valid():
             serializer.save()
         return Response({
-            "status": HttpResponse.status_code,
-            "data": serializer.data})
+            "data": serializer.data},
+            status=200)
+        # return 404 kalau user tidak ada
 
     def delete(self, request, user_id):
         # permission_classes = [IsAuthenticated | IsAdminUser]
         user = Users.objects.get(user_id=user_id)
         user.delete()
         return Response({
-            "status": HttpResponse.status_code,
-            "message": 'User {} telah dihapus'.format(user['user_id'])})
+            "message": 'User {} telah dihapus'.format(user['user_id'])},
+            status=200)
+        # return 404 kalau user tidak ada
 
 # Registration
 class UserRegister(APIView):
@@ -61,12 +64,12 @@ class UserRegister(APIView):
         serializer = UserSerializer(data=user, context = {'request':request})
         if serializer.is_valid():
             user_saved = serializer.save(password=make_password(user['password']))
-            return Response(
-                {"status" : HttpResponse.status_code,
-                "data" : user_saved})
+            return Response(user,
+                status=200)
         return Response({
-           "status" : HttpResponse.status_code,
-            "error" : "Terjadi kesalahan"})
+            "error" : "Terjadi kesalahan"},
+            status=406)
+        # return 404 kalau user tidak ada
 
 # Login
 class UserLogin(APIView):
@@ -75,12 +78,12 @@ class UserLogin(APIView):
         data = request.data
         user = Users.objects.filter(username=data['username']).values().first()
         if not user:
-            return Response("User tidak ditemukan")
+            return Response({"User tidak ditemukan"}, status=401)
 
         # kode di bawah me-return false jika password yang diinput tidak sesuai dengan
         # password yang sudah di-hash
         if not check_password(data['password'], user['password']):
-            return Response('Password Salah')
+            return Response({'Password Salah'}, status=401)
             
             # exp = expired, iat = issued at
         payload = {
@@ -99,6 +102,7 @@ class UserLogin(APIView):
             'jwt': token
         }
         return response
+        # return 404 kalau user tidak ada
 
 # User authentication
 class UserAuthentication(APIView):
@@ -107,19 +111,19 @@ class UserAuthentication(APIView):
         token = request.COOKIES.get('jwt')
 
         if not token:
-            raise AuthenticationFailed("Unauthenticated", status=401)
+            raise AuthenticationFailed({"Unauthenticated"}, status=401)
 
         try:
             payload = jwt.decode(token, 'secret', algorithms=['HS256'])
         except jwt.ExpiredSignatureError:
-            raise AuthenticationFailed("Unauthenticated", status=401)
+            raise AuthenticationFailed({"Unauthenticated"}, status=401)
 
         user = Users.objects.filter(user_id=payload['id']).first()
         serializer = UserSerializer(user)
 
         return Response({
-            "status": HttpResponse.status_code,
-            "data": serializer.data})
+            "data": serializer.data},
+            status=200)
 
 # Logout
 class UserLogout(APIView):
@@ -127,7 +131,6 @@ class UserLogout(APIView):
         response = Response()
         response.delete_cookie('jwt')
         response.data = {
-            "status" : HttpResponse.status_code,
             "Message": "User has logout successfully"
         }
         return response
