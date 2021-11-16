@@ -63,11 +63,11 @@ class UserRegister(APIView):
         user = request.data
         serializer = UserSerializer(data=user, context = {'request':request})
         if serializer.is_valid():
-            user_saved = serializer.save(password=make_password(user['password']))
-            return Response(user,
+            user_saved = serializer.save()
+            return Response(user_saved,
                 status=200)
         return Response({
-            "error" : "Terjadi kesalahan"},
+            "error" : "An error encountered"},
             status=406)
         # return 404 kalau user tidak ada
 
