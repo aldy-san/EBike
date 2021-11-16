@@ -7,6 +7,8 @@ class Users(models.Model):
     email = models.CharField(max_length=256)
     password = models.CharField(max_length=1024)
     date_created = models.DateField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+
     def __str__(self):
         return str(self.username)
 
