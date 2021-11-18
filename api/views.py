@@ -78,7 +78,7 @@ class UserLogin(APIView):
     def post(self, request):
         # permission_classes = [IsAuthenticated | IsAdminUser]
         data = request.data
-        user = Bikers.objects.filter(username=data['username']).values().first()
+        user = Bikers.objects.filter(email=data['email']).values().first()
         if not user:
             return Response({"User tidak ditemukan"}, status=401)
 
