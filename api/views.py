@@ -18,8 +18,8 @@ import jwt
 # Get all users
 class UsersView(APIView):
     def get(self,request):
-        users = Users.objects.all()
-        serializer = UserSerializer(users, many=True)
+        users = Bikers.objects.all()
+        serializer = BikersSerializer(users, many=True)
         return Response({
             "data": serializer.data}, 
             status=200)
@@ -28,8 +28,8 @@ class UsersView(APIView):
 class UserDetailView(APIView):
     def get(self, request, user_id):
         # permission_classes = [IsAuthenticated | IsAdminUser]
-        user = Users.objects.get(user_id=user_id)
-        serializer = UserSerializer(user, many=False)
+        user = Bikers.objects.get(user_id=user_id)
+        serializer = BikersSerializer(user, many=False)
         return Response({
             "data": serializer.data},
             status=200)
@@ -38,8 +38,8 @@ class UserDetailView(APIView):
     def put(self, request, user_id):
         data = request.data
         # permission_classes = [IsAuthenticated | IsAdminUser]
-        user = Users.objects.get(user_id=user_id)
-        serializer = UserSerializer(user, data=data)
+        user = Bikers.objects.get(user_id=user_id)
+        serializer = BikersSerializer(user, data=data)
         if serializer.is_valid():
             serializer.save()
         return Response({
@@ -49,7 +49,7 @@ class UserDetailView(APIView):
 
     def delete(self, request, user_id):
         # permission_classes = [IsAuthenticated | IsAdminUser]
-        user = Users.objects.get(user_id=user_id)
+        user = Bikers.objects.get(user_id=user_id)
         user.delete()
         return Response({
             "message": 'User {} telah dihapus'.format(user['user_id'])},
@@ -61,10 +61,12 @@ class UserRegister(APIView):
     def post(self, request):
         # permission_classes = [IsAuthenticated | IsAdminUser]
         user = request.data
-        serializer = UserSerializer(data=user, context = {'request':request})
+        serializer = BikersSerializer(data=user, context = {'request':request})
         if serializer.is_valid():
-            user_saved = serializer.save()
-            return Response(user_saved,
+            serializer.save(password=make_password(user['password']))
+            return Response({
+                "message" : "User has been created succesfully"
+            },
                 status=200)
         return Response({
             "error" : "An error encountered"},
@@ -76,7 +78,7 @@ class UserLogin(APIView):
     def post(self, request):
         # permission_classes = [IsAuthenticated | IsAdminUser]
         data = request.data
-        user = Users.objects.filter(username=data['username']).values().first()
+        user = Bikers.objects.filter(username=data['username']).values().first()
         if not user:
             return Response({"User tidak ditemukan"}, status=401)
 
@@ -118,8 +120,8 @@ class UserAuthentication(APIView):
         except jwt.ExpiredSignatureError:
             raise AuthenticationFailed({"Unauthenticated"}, status=401)
 
-        user = Users.objects.filter(user_id=payload['id']).first()
-        serializer = UserSerializer(user)
+        user = Bikers.objects.filter(user_id=payload['id']).first()
+        serializer = BikersSerializer(user)
 
         return Response({
             "data": serializer.data},
