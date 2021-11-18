@@ -1,16 +1,22 @@
 from django.db import models
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
+from .managers import CustomUserManager
 
 # Create your models here.
-class Users(models.Model):
+class Bikers(AbstractBaseUser, PermissionsMixin):
     user_id = models.BigAutoField(primary_key=True)
-    username = models.CharField(max_length=256)
-    email = models.CharField(max_length=256)
-    password = models.CharField(max_length=1024)
+    email = models.EmailField(max_length=256, unique=True)
     date_created = models.DateField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
+
+    objects = CustomUserManager()
 
     def __str__(self):
-        return str(self.username)
+        return str(self.email)
 
 class Station(models.Model):
     station_id = models.BigAutoField(primary_key=True)
